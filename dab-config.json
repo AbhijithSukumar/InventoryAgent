@@ -1,0 +1,125 @@
+{
+  "$schema": "https://github.com/Azure/data-api-builder/releases/download/v2.0.8/dab.draft.schema.json",
+  "data-source": {
+    "database-type": "mssql",
+    "connection-string": "Server=YOUR_CONN_STRING;Database=InventoryDB;Trusted_Connection=True;TrustServerCertificate=True;",
+    "options": { "set-session-context": true }
+  },
+  "runtime": {
+    "rest": {
+      "enabled": true,
+      "path": "/api"
+    },
+    "graphql": {
+      "enabled": true,
+      "path": "/graphql"
+    },
+    "mcp": {
+      "enabled": true,
+      "path": "/mcp"
+    },
+    "host": {
+      "authentication": { "provider": "Simulator" },
+      "mode": "development"
+    }
+  },
+  "entities": {
+    "Hardware": {
+      "source": {
+        "object": "dbo.Hardware",
+        "type": "table"
+      },
+      "permissions": [
+        {
+          "role": "Admin",
+          "actions": [ "*" ]
+        },
+        {
+          "role": "Support-Agent",
+          "actions": [ "read", "update" ]
+        },
+        {
+          "role": "Staff",
+          "actions": [
+            {
+              "action": "read",
+              "policy": { "database": "@item.currentUser == @header('x-ms-api-userid')" }
+            }
+          ]
+        }
+      ],
+      "relationships": {
+        "AssignedUser": {
+          "target.entity": "Users",
+          "cardinality": "one",
+          "source.fields": [ "currentUser" ],
+          "target.fields": [ "UserID" ]
+        }
+      }
+    },
+    "Tickets": {
+      "source": {
+        "object": "dbo.Tickets",
+        "type": "table"
+      },
+      "permissions": [
+        {
+          "role": "Admin",
+          "actions": [ "*" ]
+        },
+        {
+          "role": "Support-Agent",
+          "actions": [ "read", "update" ]
+        },
+        {
+          "role": "Staff",
+          "actions": [
+            {
+              "action": "read",
+              "policy": { "database": "@item.UserID == @context.auth.userId" }
+            },
+            {
+              "action": "update",
+              "policy": { "database": "@item.UserID == @context.auth.userId" }
+            },
+            { "action": "create" }
+          ]
+        }
+      ],
+      "relationships": {
+        "RelatedHardware": {
+          "target.entity": "Hardware",
+          "cardinality": "one",
+          "source.fields": [ "HardwareID" ],
+          "target.fields": [ "HardwareID" ]
+        },
+        "Owner": {
+          "target.entity": "Users",
+          "cardinality": "one",
+          "source.fields": [ "UserID" ],
+          "target.fields": [ "UserID" ]
+        }
+      }
+    },
+    "Users": {
+      "source": {
+        "object": "dbo.Users",
+        "type": "table"
+      },
+      "permissions": [
+        {
+          "role": "Admin",
+          "actions": [ "*" ]
+        },
+        {
+          "role": "Support-Agent",
+          "actions": [ "read" ]
+        },
+        {
+          "role": "Staff",
+          "actions": [ "read" ]
+        }
+      ]
+    }
+  }
+}
